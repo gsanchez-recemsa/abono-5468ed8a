@@ -1,0 +1,12 @@
+{
+  "name": "Libro del Abono",
+  "short_name": "Abono",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#e6e8ec",
+  "theme_color": "#e6e8ec",
+  "icons": [
+    { "src": "icono-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icono-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
