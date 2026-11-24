@@ -26,30 +26,30 @@
 </style>
 </head>
 <body>
-<div class="pick" id="pick" hidden>
+<div class="pick" id="pick">
   <img src="icono-180.png" alt="">
   <h1 style="margin:0;font-size:22px">Libro del Abono</h1>
-  <p style="margin:0;color:#646a82">¿Quién eres?</p>
-  <a href="?yo=p1">Gonzalo</a><a href="?yo=p2">Manuel</a><a href="?yo=p3">Pedro</a>
+  <div id="elige"><p style="margin:0 0 12px;color:#646a82">¿Quién eres?</p>
+    <div style="display:flex;flex-direction:column;gap:10px;align-items:center"><a href="?yo=p1">Gonzalo</a><a href="?yo=p2">Manuel</a><a href="?yo=p3">Pedro</a></div></div>
+  <div id="instala" hidden>
+    <p style="margin:0;max-width:300px;line-height:1.45">Para tenerla como app con su icono: pulsa <b>Compartir</b> (el cuadrado con la flecha) y luego <b>Añadir a pantalla de inicio</b>.</p>
+    <a id="abrir" href="#" style="background:#e3b33a;color:#1b2550;margin-top:8px">Abrir ahora</a>
+  </div>
 </div>
-<div class="tip" id="tip" hidden>Para tenerla como app: pulsa <b>Compartir</b> (el cuadrado con la flecha) y luego <b>Añadir a pantalla de inicio</b>.<button type="button" id="tipX" aria-label="Cerrar">×</button></div>
 <script>
   var APP = "https://script.google.com/macros/s/AKfycbxHWzGWJC5xwHakNP-iwxpqdHjFcDLmCBB0RrNirJ9Quu4ugf4Pc9bEbXRhNzGyvs-i/exec";
   var ok = ["p1", "p2", "p3"];
   var yo = new URLSearchParams(location.search).get("yo");
   try { if (ok.indexOf(yo) >= 0) localStorage.setItem("abono-yo", yo); else yo = localStorage.getItem("abono-yo"); } catch (e) {}
+  var esApp = window.navigator.standalone || matchMedia("(display-mode: standalone)").matches;
   if (ok.indexOf(yo) >= 0) {
-    var f = document.createElement("iframe");
-    f.src = APP + "?yo=" + yo;
-    f.title = "Libro del Abono";
-    f.allow = "clipboard-write";
-    document.body.appendChild(f);
-    var app = window.navigator.standalone || matchMedia("(display-mode: standalone)").matches;
-    var ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
-    if (ios && !app) document.getElementById("tip").hidden = false;
-    document.getElementById("tipX").onclick = function () { document.getElementById("tip").hidden = true; };
-  } else {
-    document.getElementById("pick").hidden = false;
+    var destino = APP + "?yo=" + yo;
+    if (esApp) location.replace(destino);
+    else {
+      document.getElementById("elige").hidden = true;
+      document.getElementById("instala").hidden = false;
+      document.getElementById("abrir").href = destino;
+    }
   }
 </script>
 </body>
