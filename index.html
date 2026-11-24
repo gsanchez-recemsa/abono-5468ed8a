@@ -14,43 +14,67 @@
 <link rel="icon" type="image/png" href="icono-192.png">
 <link rel="manifest" href="manifest.json">
 <style>
-  html,body{margin:0;height:100%;background:#e6e8ec;font-family:-apple-system,system-ui,sans-serif;color:#1b2550}
-  iframe{position:fixed;inset:0;width:100%;height:100%;border:0;padding-top:env(safe-area-inset-top,0px);box-sizing:border-box;background:#e6e8ec}
-  .pick{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;box-sizing:border-box;text-align:center}
+  html,body{margin:0;min-height:100%;background:#e6e8ec;font-family:-apple-system,system-ui,sans-serif;color:#1b2550}
+  .pick{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;box-sizing:border-box;text-align:center}
   .pick img{width:96px;height:96px;border-radius:22px}
-  .pick a{display:block;width:220px;padding:14px;border-radius:12px;background:#1b2550;color:#fff;text-decoration:none;font-weight:600}
-  .tip{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));background:#1b2550;color:#fff;border-radius:14px;padding:12px 40px 12px 14px;font-size:14px;line-height:1.4;box-shadow:0 6px 20px rgba(0,0,0,.25);z-index:2}
-  .tip b{color:#e3b33a}
-  .tip button{position:absolute;top:6px;right:8px;background:none;border:0;color:#fff;font-size:20px;padding:4px 8px}
+  .pick a,.pick button{display:block;width:220px;padding:14px;border-radius:12px;background:#1b2550;color:#fff;text-decoration:none;font:600 16px -apple-system,system-ui,sans-serif;border:0}
   [hidden]{display:none!important}
 </style>
 </head>
 <body>
-<div class="pick" id="pick">
+<div class="pick">
   <img src="icono-180.png" alt="">
   <h1 style="margin:0;font-size:22px">Libro del Abono</h1>
-  <div id="elige"><p style="margin:0 0 12px;color:#646a82">¿Quién eres?</p>
+  <div id="cargando"><p style="margin:0;color:#646a82">Cargando…</p></div>
+  <div id="elige" hidden><p style="margin:0 0 12px;color:#646a82">¿Quién eres?</p>
     <div style="display:flex;flex-direction:column;gap:10px;align-items:center"><a href="?yo=p1">Gonzalo</a><a href="?yo=p2">Manuel</a><a href="?yo=p3">Pedro</a></div></div>
   <div id="instala" hidden>
-    <p style="margin:0;max-width:300px;line-height:1.45">Para tenerla como app con su icono: pulsa <b>Compartir</b> (el cuadrado con la flecha) y luego <b>Añadir a pantalla de inicio</b>.</p>
-    <a id="abrir" href="#" style="background:#e3b33a;color:#1b2550;margin-top:8px">Abrir ahora</a>
+    <p style="margin:0 0 10px;max-width:300px;line-height:1.45">Para tenerla como app: pulsa <b>Compartir</b> (el cuadrado con la flecha) y luego <b>Añadir a pantalla de inicio</b>.</p>
+    <button type="button" id="abrir" style="background:#e3b33a;color:#1b2550;margin:0 auto">Abrir ahora</button>
   </div>
+  <div id="error" hidden><p style="margin:0 0 10px;color:#b4462f">No se pudo cargar. Revisa la conexión.</p><button type="button" onclick="location.reload()">Reintentar</button></div>
 </div>
 <script>
+(function () {
   var APP = "https://script.google.com/macros/s/AKfycbxHWzGWJC5xwHakNP-iwxpqdHjFcDLmCBB0RrNirJ9Quu4ugf4Pc9bEbXRhNzGyvs-i/exec";
-  var ok = ["p1", "p2", "p3"];
-  var yo = new URLSearchParams(location.search).get("yo");
-  try { if (ok.indexOf(yo) >= 0) localStorage.setItem("abono-yo", yo); else yo = localStorage.getItem("abono-yo"); } catch (e) {}
-  var esApp = window.navigator.standalone || matchMedia("(display-mode: standalone)").matches;
-  if (ok.indexOf(yo) >= 0) {
-    var destino = APP + "?yo=" + yo;
-    if (esApp) location.replace(destino);
-    else {
-      document.getElementById("elige").hidden = true;
-      document.getElementById("instala").hidden = false;
-      document.getElementById("abrir").href = destino;
-    }
+  var OK = ["p1", "p2", "p3"];
+  var $ = function (id) { return document.getElementById(id); };
+  var quien = new URLSearchParams(location.search).get("yo");
+  var guardado = null;
+  try { if (OK.indexOf(quien) >= 0) localStorage.setItem("abono-yo", quien); else quien = localStorage.getItem("abono-yo"); } catch (e) {}
+  try { guardado = localStorage.getItem("abono-ui"); } catch (e) {}
+
+  var mostrado = false;
+  function mostrar(html) {
+    if (mostrado) return;
+    mostrado = true;
+    document.open();
+    document.write(html);
+    document.close();
   }
+  function cargar() {
+    if (guardado) mostrar(guardado);
+    fetch(APP + "?api=ui", { cache: "no-store" })
+      .then(function (r) { return r.text(); })
+      .then(function (html) {
+        if (html.indexOf("Libro del Abono") < 0) throw new Error("respuesta rara");
+        try { localStorage.setItem("abono-ui", html); } catch (e) {}
+        mostrar(html);
+      })
+      .catch(function () { if (!mostrado) { $("cargando").hidden = true; $("error").hidden = false; } });
+  }
+
+  if (OK.indexOf(quien) < 0) { $("cargando").hidden = true; $("elige").hidden = false; return; }
+  var esApp = window.navigator.standalone || matchMedia("(display-mode: standalone)").matches;
+  var ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
+  if (ios && !esApp) {
+    $("cargando").hidden = true;
+    $("instala").hidden = false;
+    $("abrir").onclick = cargar;
+    return;
+  }
+  cargar();
+})();
 </script>
 </body>
 </html>
